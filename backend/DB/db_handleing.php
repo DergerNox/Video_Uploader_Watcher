@@ -40,9 +40,9 @@ function createTableRegisteredUsers()
 
         // use exec() because no results are returned
         $conn->exec($sql);
-        echo "Table MyGuests created successfully";
-    } 
-    catch (PDOException $e) {
+        echo "Table RegisteredUsers created successfully";
+        echo "<br>";
+    } catch (PDOException $e) {
         echo $sql . "<br>" . $e->getMessage();
     }
 
