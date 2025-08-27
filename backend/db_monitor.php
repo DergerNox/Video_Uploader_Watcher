@@ -2,4 +2,5 @@
 require_once 'DB/db_handleing.php';
 createDB();
 createTableRegisteredUsers();
+createTableVideos();
 ?>
