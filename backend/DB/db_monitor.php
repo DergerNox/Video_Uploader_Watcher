@@ -1,6 +1,7 @@
 <?php
-require_once 'DB/db_handleing.php';
+require_once 'db_handleing.php';
 createDB();
 createTableRegisteredUsers();
 createTableVideos();
+//checkDB();
 ?>
