@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $pdo = new PDO($dsn, $user, $pass);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $stmt = $pdo->prepare("INSERT INTO RegisteredUsers (UserName, email, reg_date) VALUES (?, ?, NOW())");
-        $stmt->execute([$username, $email]);
+        $stmt = $pdo->prepare("INSERT INTO RegisteredUsers (UserName, email, password, reg_date) VALUES (?, ?, ?, NOW())");
+        $stmt->execute([$username, $email, $hashedPassword]);
 
         echo "Registration successful!";
 
