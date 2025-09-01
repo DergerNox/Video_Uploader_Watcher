@@ -25,29 +25,53 @@ function createTableRegisteredUsers()
     $username = "Derger";
     $password = "B@kugan8";
     $dbname = "myDB_PHP";
+
     try {
         $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-        // set the PDO error mode to exception
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        // sql to create table
-        $sql = "CREATE TABLE IF NOT EXISTS  RegisteredUsers (
+        // 1. Create table if it doesn't exist
+        $sql = "CREATE TABLE IF NOT EXISTS RegisteredUsers (
             id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             UserName VARCHAR(30) NOT NULL,
-            email VARCHAR(50),
+            email VARCHAR(50) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
             reg_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )";
-
-        // use exec() because no results are returned
+        )";
         $conn->exec($sql);
-        echo "Table RegisteredUsers created successfully";
-        echo "<br>";
+        echo "Table RegisteredUsers created successfully<br>";
+
+        // 2. Optionally check for missing columns (if table existed)
+        $columns = ['UserName','email','password','reg_date'];
+        foreach ($columns as $col) {
+            $stmt = $conn->query("SHOW COLUMNS FROM RegisteredUsers LIKE '$col'");
+            if ($stmt->rowCount() == 0) {
+                // Add missing column
+                switch ($col) {
+                    case 'UserName':
+                        $conn->exec("ALTER TABLE RegisteredUsers ADD COLUMN UserName VARCHAR(30) NOT NULL");
+                        break;
+                    case 'email':
+                        $conn->exec("ALTER TABLE RegisteredUsers ADD COLUMN email VARCHAR(50) NOT NULL UNIQUE");
+                        break;
+                    case 'password':
+                        $conn->exec("ALTER TABLE RegisteredUsers ADD COLUMN password VARCHAR(255) NOT NULL");
+                        break;
+                    case 'reg_date':
+                        $conn->exec("ALTER TABLE RegisteredUsers ADD COLUMN reg_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+                        break;
+                }
+                echo "Added missing column $col<br>";
+            }
+        }
+
     } catch (PDOException $e) {
-        echo $sql . "<br>" . $e->getMessage();
+        echo "DB Error: " . $e->getMessage();
     }
 
     $conn = null;
 }
+
 function createTableVideos()
 {
     $servername = "localhost";
