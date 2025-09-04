@@ -33,4 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         echo "Error: " . $e->getMessage();
     }
 }
+header("Location: ../index.php?message=registered");
+exit;
 ?>
