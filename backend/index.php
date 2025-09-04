@@ -64,3 +64,7 @@
 
 </body>
 </html>
+<?php if (isset($_GET['message']) && $_GET['message'] === 'registered'): ?>
+    <p style="color: green;">Registration successful!</p>
+<?php endif; ?>
+
