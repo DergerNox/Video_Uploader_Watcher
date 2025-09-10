@@ -6,32 +6,26 @@
     <button type="submit">Login</button>
 </form>
 <?php
+require_once __DIR__ . '/../bootstrap.php';
+
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    $dsn = "mysql:host=localhost;dbname=myDB_PHP;charset=utf8";
-    $user = "Derger";
-    $pass = "B@kugan8";
-
     try {
-        $pdo = new PDO($dsn, $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $user = $entityManager->getRepository(\DB\Entities\User::class)->findOneBy(['email' => $email]);
 
-        $stmt = $pdo->prepare("SELECT id, password FROM RegisteredUsers WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
+        if ($user && password_verify($password, $user->getPassword())) {
+            $_SESSION['user_id'] = $user->getId();
+            $_SESSION['role'] = $user->getRole() ?: 'user';
             echo "Login successful!";
         } else {
             echo "Invalid email or password.";
         }
 
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         echo "Error: " . $e->getMessage();
     }
 }

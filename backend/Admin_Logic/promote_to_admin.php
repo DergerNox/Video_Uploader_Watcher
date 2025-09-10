@@ -1,32 +1,26 @@
 <?php
+require_once __DIR__ . '/../bootstrap.php';
+
 // Simple script to promote a user to admin
-$dsn = "mysql:host=localhost;dbname=myDB_PHP;charset=utf8";
-$user = "Derger";
-$pass = "B@kugan8";
 
 try {
-    $pdo = new PDO($dsn, $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $email = $_POST['email'];
 
         // Check if user exists
-        $stmt = $pdo->prepare("SELECT * FROM RegisteredUsers WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = $entityManager->getRepository(\DB\Entities\User::class)->findOneBy(['email' => $email]);
 
         if ($user) {
             // Update role to admin
-            $update = $pdo->prepare("UPDATE RegisteredUsers SET role='admin' WHERE email = ?");
-            $update->execute([$email]);
-            echo "User {$user['UserName']} promoted to admin successfully!";
+            $user->setRole('admin');
+            $entityManager->flush();
+            echo "User {$user->getUserName()} promoted to admin successfully!";
         } else {
             echo "No user found with that email.";
         }
     }
 
-} catch (PDOException $e) {
+} catch (Exception $e) {
     echo "DB Error: " . $e->getMessage();
 }
 ?>

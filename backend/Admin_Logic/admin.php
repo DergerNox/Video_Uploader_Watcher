@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../bootstrap.php';
+
 session_start();
 
 // Only allow admin users
@@ -6,63 +8,69 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     die("Access denied. Admins only.");
 }
 
-$dsn = "mysql:host=localhost;dbname=myDB_PHP;charset=utf8";
-$user = "Derger";
-$pass = "B@kugan8";
-
 try {
-    $pdo = new PDO($dsn, $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     // Promote to admin
     if (isset($_POST['promote_user_id'])) {
         $promoteId = (int)$_POST['promote_user_id'];
-        $stmt = $pdo->prepare("UPDATE RegisteredUsers SET role='admin' WHERE id=?");
-        $stmt->execute([$promoteId]);
-        $successMessage = "User ID $promoteId promoted to admin successfully!";
+        $userToPromote = $entityManager->find(\DB\Entities\User::class, $promoteId);
+        if ($userToPromote) {
+            $userToPromote->setRole('admin');
+            $entityManager->flush();
+            $successMessage = "User ID $promoteId promoted to admin successfully!";
+        }
     }
 
     // Delete user
     if (isset($_POST['delete_user_id'])) {
         $delId = (int)$_POST['delete_user_id'];
-        $stmt = $pdo->prepare("DELETE FROM RegisteredUsers WHERE id=?");
-        $stmt->execute([$delId]);
-        $successMessage = "User ID $delId deleted successfully!";
+        $userToDelete = $entityManager->find(\DB\Entities\User::class, $delId);
+        if ($userToDelete) {
+            $entityManager->remove($userToDelete);
+            $entityManager->flush();
+            $successMessage = "User ID $delId deleted successfully!";
+        }
     }
 
     // Delete video
     if (isset($_POST['delete_video_id'])) {
         $delVid = (int)$_POST['delete_video_id'];
-        $stmt = $pdo->prepare("DELETE FROM Videos WHERE id=?");
-        $stmt->execute([$delVid]);
-        $successMessage = "Video ID $delVid deleted successfully!";
+        $videoToDelete = $entityManager->find(\DB\Entities\Video::class, $delVid);
+        if ($videoToDelete) {
+            $entityManager->remove($videoToDelete);
+            $entityManager->flush();
+            $successMessage = "Video ID $delVid deleted successfully!";
+        }
     }
 
     // Update user info (inline editing)
     if (isset($_POST['edit_user_id'])) {
         $id = (int)$_POST['edit_user_id'];
-        $username = $_POST['UserName'];
-        $email = $_POST['email'];
-        $stmt = $pdo->prepare("UPDATE RegisteredUsers SET UserName=?, email=? WHERE id=?");
-        $stmt->execute([$username, $email, $id]);
-        $successMessage = "User ID $id updated successfully!";
+        $userToEdit = $entityManager->find(\DB\Entities\User::class, $id);
+        if ($userToEdit) {
+            $userToEdit->setUserName($_POST['UserName']);
+            $userToEdit->setEmail($_POST['email']);
+            $entityManager->flush();
+            $successMessage = "User ID $id updated successfully!";
+        }
     }
 
     // Update video info (inline editing)
     if (isset($_POST['edit_video_id'])) {
         $id = (int)$_POST['edit_video_id'];
-        $title = $_POST['title'];
-        $description = $_POST['description'];
-        $stmt = $pdo->prepare("UPDATE Videos SET title=?, description=? WHERE id=?");
-        $stmt->execute([$title, $description, $id]);
-        $successMessage = "Video ID $id updated successfully!";
+        $videoToEdit = $entityManager->find(\DB\Entities\Video::class, $id);
+        if ($videoToEdit) {
+            $videoToEdit->setTitle($_POST['title']);
+            $videoToEdit->setDescription($_POST['description']);
+            $entityManager->flush();
+            $successMessage = "Video ID $id updated successfully!";
+        }
     }
 
     // Fetch data
-    $users = $pdo->query("SELECT * FROM RegisteredUsers")->fetchAll(PDO::FETCH_ASSOC);
-    $videos = $pdo->query("SELECT * FROM Videos")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $entityManager->getRepository(\DB\Entities\User::class)->findAll();
+    $videos = $entityManager->getRepository(\DB\Entities\Video::class)->findAll();
 
-} catch (PDOException $e) {
+} catch (Exception $e) {
     die("DB Error: " . $e->getMessage());
 }
 ?>
@@ -100,26 +108,26 @@ try {
     <?php foreach ($users as $row): ?>
         <tr>
             <form method="post">
-                <input type="hidden" name="edit_user_id" value="<?= $row['id'] ?>">
-                <td><?= $row['id'] ?></td>
-                <td><input type="text" name="UserName" value="<?= htmlspecialchars($row['UserName']) ?>"></td>
-                <td><input type="email" name="email" value="<?= htmlspecialchars($row['email']) ?>"></td>
-                <td><?= htmlspecialchars($row['password']) ?></td>
-                <td><?= htmlspecialchars($row['reg_date']) ?></td>
-                <td><?= htmlspecialchars($row['role']) ?></td>
+                <input type="hidden" name="edit_user_id" value="<?= $row->getId() ?>">
+                <td><?= $row->getId() ?></td>
+                <td><input type="text" name="UserName" value="<?= htmlspecialchars($row->getUserName()) ?>"></td>
+                <td><input type="email" name="email" value="<?= htmlspecialchars($row->getEmail()) ?>"></td>
+                <td>****</td>
+                <td><?= htmlspecialchars($row->getRegDate()->format('Y-m-d H:i:s')) ?></td>
+                <td><?= htmlspecialchars($row->getRole()) ?></td>
                 <td>
                     <button type="submit">Save</button>
                 </td>
             </form>
             <td>
-                <?php if ($row['role'] !== 'admin'): ?>
+                <?php if ($row->getRole() !== 'admin'): ?>
                     <form method="post">
-                        <input type="hidden" name="promote_user_id" value="<?= $row['id'] ?>">
+                        <input type="hidden" name="promote_user_id" value="<?= $row->getId() ?>">
                         <button type="submit">Make Admin</button>
                     </form>
                 <?php endif; ?>
                 <form method="post" onsubmit="return confirm('Delete this user?');">
-                    <input type="hidden" name="delete_user_id" value="<?= $row['id'] ?>">
+                    <input type="hidden" name="delete_user_id" value="<?= $row->getId() ?>">
                     <button type="submit">Delete</button>
                 </form>
             </td>
@@ -140,20 +148,20 @@ try {
     <?php foreach ($videos as $row): ?>
         <tr>
             <form method="post">
-                <input type="hidden" name="edit_video_id" value="<?= $row['id'] ?>">
-                <td><?= $row['id'] ?></td>
-                <td><input type="text" name="title" value="<?= htmlspecialchars($row['title']) ?>"></td>
-                <td><input type="text" name="description" value="<?= htmlspecialchars($row['description']) ?>"></td>
-                <td><?= htmlspecialchars($row['file_path']) ?></td>
-                <td><?= htmlspecialchars($row['upload_date']) ?></td>
-                <td><?= htmlspecialchars($row['UserID']) ?></td>
+                <input type="hidden" name="edit_video_id" value="<?= $row->getId() ?>">
+                <td><?= $row->getId() ?></td>
+                <td><input type="text" name="title" value="<?= htmlspecialchars($row->getTitle()) ?>"></td>
+                <td><input type="text" name="description" value="<?= htmlspecialchars($row->getDescription() ?? '') ?>"></td>
+                <td><?= htmlspecialchars($row->getFilePath()) ?></td>
+                <td><?= htmlspecialchars($row->getUploadDate()->format('Y-m-d H:i:s')) ?></td>
+                <td><?= htmlspecialchars($row->getUser()->getId()) ?></td>
                 <td>
                     <button type="submit">Save</button>
                 </td>
             </form>
             <td>
                 <form method="post" onsubmit="return confirm('Delete this video?');">
-                    <input type="hidden" name="delete_video_id" value="<?= $row['id'] ?>">
+                    <input type="hidden" name="delete_video_id" value="<?= $row->getId() ?>">
                     <button type="submit">Delete</button>
                 </form>
             </td>

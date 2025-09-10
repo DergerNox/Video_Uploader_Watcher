@@ -1,0 +1,12 @@
+{
+    "autoload": {
+        "psr-4": {
+            "DB\\": "backend/DB/"
+        }
+    },
+    "require": {
+        "doctrine/orm": "^2.17",
+        "doctrine/dbal": "^3.8",
+        "doctrine/annotations": "^1.14"
+    }
+}

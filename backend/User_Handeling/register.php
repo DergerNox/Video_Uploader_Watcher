@@ -8,6 +8,8 @@
     <button type="submit">Register</button>
 </form>
 <?php
+require_once __DIR__ . '/../bootstrap.php';
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $email = $_POST['email'];
@@ -16,20 +18,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Hash password for security
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    $dsn = "mysql:host=localhost;dbname=myDB_PHP;charset=utf8";
-    $user = "Derger";
-    $pass = "B@kugan8";
-
     try {
-        $pdo = new PDO($dsn, $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Check if email already exists
+        $existingUser = $entityManager->getRepository(\DB\Entities\User::class)->findOneBy(['email' => $email]);
+        if ($existingUser) {
+            echo "Email already registered!";
+            exit;
+        }
 
-        $stmt = $pdo->prepare("INSERT INTO RegisteredUsers (UserName, email, password, reg_date) VALUES (?, ?, ?, NOW())");
-        $stmt->execute([$username, $email, $hashedPassword]);
+        $user = new \DB\Entities\User();
+        $user->setUserName($username);
+        $user->setEmail($email);
+        $user->setPassword($hashedPassword);
+        $user->setRegDate(new \DateTime());
+        $user->setRole('user');
+
+        $entityManager->persist($user);
+        $entityManager->flush();
 
         echo "Registration successful!";
 
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         echo "Error: " . $e->getMessage();
     }
 }
