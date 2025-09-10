@@ -1,19 +1,25 @@
-<form method="post" action="register.php">
-    <label>Username:</label>
-    <input type="text" name="username" required><br>
-    <label>Email:</label>
-    <input type="email" name="email" required><br>
-    <label>Password:</label>
-    <input type="password" name="password" required><br>
-    <button type="submit">Register</button>
-</form>
 <?php
 require_once __DIR__ . '/../bootstrap.php';
 
+header('Content-Type: application/json');
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    // Parse JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input) {
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+        exit;
+    }
+
+    $username = $input['username'] ?? '';
+    $email = $input['email'] ?? '';
+    $password = $input['password'] ?? '';
+
+    if (empty($username) || empty($email) || empty($password)) {
+        echo json_encode(['success' => false, 'message' => 'All fields are required']);
+        exit;
+    }
 
     // Hash password for security
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -22,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Check if email already exists
         $existingUser = $entityManager->getRepository(\DB\Entities\User::class)->findOneBy(['email' => $email]);
         if ($existingUser) {
-            echo "Email already registered!";
+            echo json_encode(['success' => false, 'message' => 'Email already registered']);
             exit;
         }
 
@@ -36,12 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $entityManager->persist($user);
         $entityManager->flush();
 
-        echo "Registration successful!";
+        echo json_encode(['success' => true, 'message' => 'Registration successful']);
 
     } catch (Exception $e) {
-        echo "Error: " . $e->getMessage();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
 }
-header("Location: ../index.php?message=registered");
-exit;
 ?>

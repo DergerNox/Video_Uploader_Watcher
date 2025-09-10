@@ -1,18 +1,26 @@
-<form method="post" action="login.php">
-    <label>Email:</label>
-    <input type="email" name="email" required><br>
-    <label>Password:</label>
-    <input type="password" name="password" required><br>
-    <button type="submit">Login</button>
-</form>
 <?php
 require_once __DIR__ . '/../bootstrap.php';
+
+header('Content-Type: application/json');
 
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    // Parse JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input) {
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+        exit;
+    }
+
+    $email = $input['email'] ?? '';
+    $password = $input['password'] ?? '';
+
+    if (empty($email) || empty($password)) {
+        echo json_encode(['success' => false, 'message' => 'Email and password are required']);
+        exit;
+    }
 
     try {
         $user = $entityManager->getRepository(\DB\Entities\User::class)->findOneBy(['email' => $email]);
@@ -20,13 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($user && password_verify($password, $user->getPassword())) {
             $_SESSION['user_id'] = $user->getId();
             $_SESSION['role'] = $user->getRole() ?: 'user';
-            echo "Login successful!";
+            echo json_encode(['success' => true, 'message' => 'Login successful', 'user_id' => $user->getId(), 'role' => $user->getRole()]);
         } else {
-            echo "Invalid email or password.";
+            echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
         }
 
     } catch (Exception $e) {
-        echo "Error: " . $e->getMessage();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
 }
 ?>
